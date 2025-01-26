@@ -277,6 +277,13 @@
         </body>
       </body>
     </body>
+    <body name="box_object" pos="0.2 0.5 0.05">
+      <joint name="box_object_joint" type="free" frictionloss="0.01" />
+      <inertial pos="0 0 0" mass="0.05" diaginertia="0.002 0.002 0.002" />
+      <geom condim="4" solimp="2 1 0.01" solref="0.01 1" friction="1 0.005 0.0001" pos="0 0 0" size="0.02 0.02 0.05" type="box" name="box_object_geom" rgba="1 0 0 1" />
+    </body>
+
+
   </worldbody>
 
   <contact>

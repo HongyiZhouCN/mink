@@ -123,10 +123,10 @@
       <geom class="frame_collision" pos="0 -0.391 -0.01" quat="0 0 0 1" mesh="wormseye_mount"/>
     </body>
     <body name="left/target" pos="0.5 0 .5" quat="0 1 0 0" mocap="true">
-      <geom type="box" size=".05 .05 .05" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/>
+      <!-- <geom type="box" size=".025 .025 .025" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/> -->
     </body>
     <body name="right/target" pos="0.5 0 .5" quat="0 1 0 0" mocap="true">
-      <geom type="box" size=".05 .05 .05" contype="0" conaffinity="0" rgba=".3 .3 .6 .2"/>
+      <!-- <geom type="box" size=".025 .025 .025" contype="0" conaffinity="0" rgba=".3 .3 .6 .2"/> -->
     </body>
   </worldbody>
 </mujoco>
