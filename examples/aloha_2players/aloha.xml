@@ -290,7 +290,7 @@
   </equality>
 
   <include file="joint_position_actuators.xml"/>
-  <include file="keyframe_ctrl.xml"/>
+<!--  <include file="keyframe_ctrl.xml"/>-->
 
   <!-- <sensor>
     <fromto geom1="left_left_finger_coll" geom2="right_left_finger_coll" cutoff="1"/>

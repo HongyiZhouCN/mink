@@ -1,0 +1,19 @@
+<mujoco>
+  <actuator>
+    <position class="waist" name="player2_left/waist" joint="player2_left/waist"/>
+    <position class="shoulder" name="player2_left/shoulder" joint="player2_left/shoulder"/>
+    <position class="elbow" name="player2_left/elbow" joint="player2_left/elbow"/>
+    <position class="forearm_roll" name="player2_left/forearm_roll" joint="player2_left/forearm_roll"/>
+    <position class="wrist_angle" name="player2_left/wrist_angle" joint="player2_left/wrist_angle"/>
+    <position class="wrist_rotate" name="player2_left/wrist_rotate" joint="player2_left/wrist_rotate"/>
+    <position class="finger" name="player2_left/gripper" joint="player2_left/left_finger"/>
+
+    <position class="waist" name="player2_right/waist" joint="player2_right/waist"/>
+    <position class="shoulder" name="player2_right/shoulder" joint="player2_right/shoulder"/>
+    <position class="elbow" name="player2_right/elbow" joint="player2_right/elbow"/>
+    <position class="forearm_roll" name="player2_right/forearm_roll" joint="player2_right/forearm_roll"/>
+    <position class="wrist_angle" name="player2_right/wrist_angle" joint="player2_right/wrist_angle"/>
+    <position class="wrist_rotate" name="player2_right/wrist_rotate" joint="player2_right/wrist_rotate"/>
+    <position class="finger" name="player2_right/gripper" joint="player2_right/left_finger"/>
+  </actuator>
+</mujoco>
