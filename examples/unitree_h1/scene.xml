@@ -19,23 +19,23 @@
     <light pos="0 0 3" directional="true"/>
     <geom name="floor" size="1 1 0.01" type="plane" material="grid"/>
     <body name="com_target" pos="0.5 0 .5" mocap="true">
-      <geom type="sphere" size=".08" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/>
+      <!-- <geom type="sphere" size=".08" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/> -->
       <site type="sphere" size="0.01" rgba="0 0 1 1" group="1"/>
     </body>
     <body name="left_wrist_target" pos="0.5 0 .5" quat="0 1 0 0" mocap="true">
-      <geom type="sphere" size=".06" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/>
+      <!-- <geom type="sphere" size=".06" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/> -->
       <site type="sphere" size="0.01" rgba="0 0 1 1" group="1"/>
     </body>
     <body name="right_wrist_target" pos="0.5 0 .5" quat="0 1 0 0" mocap="true">
-      <geom type="sphere" size=".06" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/>
+      <!-- <geom type="sphere" size=".06" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/> -->
       <site type="sphere" size="0.01" rgba="0 0 1 1" group="1"/>
     </body>
     <body name="left_foot_target" pos="0.5 0 .5" quat="0 1 0 0" mocap="true">
-      <geom type="box" size=".04 .04 .04" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/>
+      <!-- <geom type="box" size=".04 .04 .04" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/> -->
       <site type="sphere" size="0.01" rgba="0 0 1 1" group="1"/>
     </body>
     <body name="right_foot_target" pos="0.5 0 .5" quat="0 1 0 0" mocap="true">
-      <geom type="box" size=".04 .04 .04" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/>
+      <!-- <geom type="box" size=".04 .04 .04" contype="0" conaffinity="0" rgba=".6 .3 .3 .2"/> -->
       <site type="sphere" size="0.01" rgba="0 0 1 1" group="1"/>
     </body>
   </worldbody>

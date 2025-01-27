@@ -7,6 +7,35 @@ import numpy as np
 from loop_rate_limiters import RateLimiter
 
 import mink
+from simpub.sim.mj_publisher import MujocoPublisher
+from simpub.xr_device.meta_quest3 import MetaQuest3
+
+from scipy.spatial.transform import Rotation as R
+
+
+def apply_z_rotation(quat, z_angle=np.pi / 2):
+    """
+    Apply a rotation around the Z-axis to a given quaternion.
+
+    Args:
+        quat: The original quaternion (x, y, z, w).
+        z_angle: The rotation angle around the Z-axis in radians.
+
+    Returns:
+        A new quaternion after applying the Z-axis rotation.
+    """
+    # Convert the input quaternion to a rotation object
+    rotation = R.from_quat(quat)
+
+    # Create a rotation around the Z-axis
+    z_rotation = R.from_euler("z", z_angle)
+
+    # Combine the rotations
+    new_rotation = rotation * z_rotation  # Order matters: z_rotation is applied first
+
+    # Convert back to quaternion
+    return new_rotation.as_quat()
+
 
 _HERE = Path(__file__).parent
 _XML = _HERE / "aloha_2players" / "scene.xml"
@@ -56,25 +85,29 @@ if __name__ == "__main__":
     model = mujoco.MjModel.from_xml_path(str(_XML))
     data = mujoco.MjData(model)
 
+    publisher = MujocoPublisher(model, data, host="192.168.0.134")
+    player1 = MetaQuest3("IRLMQ3-2")
+    player2 = MetaQuest3("IRLMQ3-1")
+
     # Bodies for which to apply gravity compensation.
     left_subtree_id = model.body("left/base_link").id
     right_subtree_id = model.body("right/base_link").id
-    
+
     # Bodies for which to apply gravity compensation.
     player2_left_subtree_id = model.body("player2_left/base_link").id
     player2_right_subtree_id = model.body("player2_right/base_link").id
 
-
     # Get the dof and actuator ids for the joints we wish to control.
     joint_names: list[str] = []
     velocity_limits: dict[str, float] = {}
-    for prefix in ["left", "right"]:
+    for prefix in ["left", "right", "player2_left", "player2_right"]:
         for n in _JOINT_NAMES:
             name = f"{prefix}/{n}"
             joint_names.append(name)
             velocity_limits[name] = _VELOCITY_LIMITS[n]
     dof_ids = np.array([model.joint(name).id for name in joint_names])
     actuator_ids = np.array([model.actuator(name).id for name in joint_names])
+    print(joint_names)
 
     configuration = mink.Configuration(model)
 
@@ -116,11 +149,19 @@ if __name__ == "__main__":
     l_geoms = mink.get_subtree_geom_ids(model, model.body("left/upper_arm_link").id)
     r_geoms = mink.get_subtree_geom_ids(model, model.body("right/upper_arm_link").id)
     frame_geoms = mink.get_body_geom_ids(model, model.body("metal_frame").id)
-    
-    player2_l_wrist_geoms = mink.get_subtree_geom_ids(model, model.body("player2_left/wrist_link").id)
-    player2_r_wrist_geoms = mink.get_subtree_geom_ids(model, model.body("player2_right/wrist_link").id)
-    player2_l_geoms = mink.get_subtree_geom_ids(model, model.body("player2_left/upper_arm_link").id)
-    player2_r_geoms = mink.get_subtree_geom_ids(model, model.body("player2_right/upper_arm_link").id)
+
+    player2_l_wrist_geoms = mink.get_subtree_geom_ids(
+        model, model.body("player2_left/wrist_link").id
+    )
+    player2_r_wrist_geoms = mink.get_subtree_geom_ids(
+        model, model.body("player2_right/wrist_link").id
+    )
+    player2_l_geoms = mink.get_subtree_geom_ids(
+        model, model.body("player2_left/upper_arm_link").id
+    )
+    player2_r_geoms = mink.get_subtree_geom_ids(
+        model, model.body("player2_right/upper_arm_link").id
+    )
     player2_frame_geoms = mink.get_body_geom_ids(model, model.body("metal_frame_2").id)
 
     collision_pairs = [
@@ -146,6 +187,10 @@ if __name__ == "__main__":
     r_mid = model.body("right/target").mocapid[0]
     player2_l_mid = model.body("player2_left/target").mocapid[0]
     player2_r_mid = model.body("player2_right/target").mocapid[0]
+    player1_left_gripper_actuator = model.actuator("left/gripper").id
+    player1_right_gripper_actuator = model.actuator("right/gripper").id
+    player2_left_gripper_actuator = model.actuator("player2_left/gripper").id
+    player2_right_gripper_actuator = model.actuator("player2_right/gripper").id
     solver = "quadprog"
     pos_threshold = 5e-3
     ori_threshold = 5e-3
@@ -166,16 +211,81 @@ if __name__ == "__main__":
         mink.move_mocap_to_frame(model, data, "left/target", "left/gripper", "site")
         mink.move_mocap_to_frame(model, data, "right/target", "right/gripper", "site")
 
-        mink.move_mocap_to_frame(model, data, "player2_left/target", "player2_left/gripper", "site")
-        mink.move_mocap_to_frame(model, data, "player2_right/target", "player2_right/gripper", "site")
+        mink.move_mocap_to_frame(
+            model, data, "player2_left/target", "player2_left/gripper", "site"
+        )
+        mink.move_mocap_to_frame(
+            model, data, "player2_right/target", "player2_right/gripper", "site"
+        )
 
         rate = RateLimiter(frequency=200.0, warn=False)
         while viewer.is_running():
             # Update task targets.
             l_ee_task.set_target(mink.SE3.from_mocap_name(model, data, "left/target"))
             r_ee_task.set_target(mink.SE3.from_mocap_name(model, data, "right/target"))
-            player2_l_ee_task.set_target(mink.SE3.from_mocap_name(model, data, "player2_left/target"))
-            player2_r_ee_task.set_target(mink.SE3.from_mocap_name(model, data, "player2_right/target"))
+            player2_l_ee_task.set_target(
+                mink.SE3.from_mocap_name(model, data, "player2_left/target")
+            )
+            player2_r_ee_task.set_target(
+                mink.SE3.from_mocap_name(model, data, "player2_right/target")
+            )
+
+            # update player1
+            input_data = player1.get_input_data()
+            if input_data is not None:
+                left_hand = input_data["left"]
+                right_hand = input_data["right"]
+                if left_hand["hand_trigger"]:
+                    pos = np.array(input_data["left"]["pos"])
+                    pos[0] = pos[0] + 0.1
+                    data.mocap_pos[model.body("left/target").mocapid[0]] = pos
+                    rot = input_data["left"]["rot"]
+                    rot = apply_z_rotation(rot, z_angle = - np.pi / 2)
+                    data.mocap_quat[model.body("left/target").mocapid[0]] = np.array([rot[3], rot[0], rot[1], rot[2]])
+                    if left_hand["index_trigger"]:
+                        data.ctrl[player1_left_gripper_actuator] = 0.002
+                    else:
+                        data.ctrl[player1_left_gripper_actuator] = 0.037
+                if right_hand["hand_trigger"]:
+                    pos = np.array(input_data["right"]["pos"])
+                    pos[0] = pos[0] - 0.1
+                    data.mocap_pos[model.body("right/target").mocapid[0]] = pos
+                    rot = input_data["right"]["rot"]
+                    rot = apply_z_rotation(rot, z_angle = np.pi / 2)
+                    data.mocap_quat[model.body("right/target").mocapid[0]] = np.array([rot[3], rot[0], rot[1], rot[2]])
+                    if right_hand["index_trigger"]:
+                        data.ctrl[player1_right_gripper_actuator] = 0.002
+                    else:
+                        data.ctrl[player1_right_gripper_actuator] = 0.037
+
+            # update player2
+            input_data = player2.get_input_data()
+            if input_data is not None:
+                left_hand = input_data["left"]
+                right_hand = input_data["right"]
+                if left_hand["hand_trigger"]:
+                    pos = np.array(input_data["left"]["pos"])
+                    pos[0] = pos[0] - 0.1
+                    data.mocap_pos[model.body("player2_left/target").mocapid[0]] = pos
+                    rot = input_data["left"]["rot"]
+                    rot = apply_z_rotation(rot, z_angle = - np.pi / 2)
+                    data.mocap_quat[model.body("player2_left/target").mocapid[0]] = np.array([rot[3], rot[0], rot[1], rot[2]])
+                    if left_hand["index_trigger"]:
+                        data.ctrl[player2_left_gripper_actuator] = 0.002
+                    else:
+                        data.ctrl[player2_left_gripper_actuator] = 0.037
+                if right_hand["hand_trigger"]:
+                    pos = np.array(input_data["right"]["pos"])
+                    pos[0] = pos[0] + 0.1
+                    data.mocap_pos[model.body("player2_right/target").mocapid[0]] = pos
+                    rot = input_data["right"]["rot"]
+                    rot = apply_z_rotation(rot, z_angle = np.pi / 2)
+                    data.mocap_quat[model.body("player2_right/target").mocapid[0]] = np.array([rot[3], rot[0], rot[1], rot[2]])
+                    if right_hand["index_trigger"]:
+                        data.ctrl[player2_right_gripper_actuator] = 0.002
+                    else:
+                        data.ctrl[player2_right_gripper_actuator] = 0.037
+
 
             # Compute velocity and integrate into the next configuration.
             for i in range(max_iters):
@@ -192,16 +302,16 @@ if __name__ == "__main__":
                 l_err = l_ee_task.compute_error(configuration)
                 l_pos_achieved = np.linalg.norm(l_err[:3]) <= pos_threshold
                 l_ori_achieved = np.linalg.norm(l_err[3:]) <= ori_threshold
-                r_err = l_ee_task.compute_error(configuration)
+                r_err = r_ee_task.compute_error(configuration)
                 r_pos_achieved = np.linalg.norm(r_err[:3]) <= pos_threshold
                 r_ori_achieved = np.linalg.norm(r_err[3:]) <= ori_threshold
 
-                player2_l_err = l_ee_task.compute_error(configuration)
-                player2_l_pos_achieved = np.linalg.norm(l_err[:3]) <= pos_threshold
-                player2_l_ori_achieved = np.linalg.norm(l_err[3:]) <= ori_threshold
-                player2_r_err = l_ee_task.compute_error(configuration)
-                player2_r_pos_achieved = np.linalg.norm(r_err[:3]) <= pos_threshold
-                player2_r_ori_achieved = np.linalg.norm(r_err[3:]) <= ori_threshold
+                player2_l_err = player2_l_ee_task.compute_error(configuration)
+                player2_l_pos_achieved = np.linalg.norm(player2_l_err[:3]) <= pos_threshold
+                player2_l_ori_achieved = np.linalg.norm(player2_l_err[3:]) <= ori_threshold
+                player2_r_err = player2_r_ee_task.compute_error(configuration)
+                player2_r_pos_achieved = np.linalg.norm(player2_r_err[:3]) <= pos_threshold
+                player2_r_ori_achieved = np.linalg.norm(player2_r_err[3:]) <= ori_threshold
                 if (
                     l_pos_achieved
                     and l_ori_achieved
@@ -209,12 +319,23 @@ if __name__ == "__main__":
                     and r_ori_achieved
                     and player2_l_pos_achieved
                     and player2_l_ori_achieved
+                    and player2_r_pos_achieved
+                    and player2_r_ori_achieved
                 ):
+                    # print("get solution, break")
                     break
 
             data.ctrl[actuator_ids] = configuration.q[dof_ids]
-            compensate_gravity(model, data, [left_subtree_id, right_subtree_id,
-                                             player2_left_subtree_id, player2_right_subtree_id])
+            compensate_gravity(
+                model,
+                data,
+                [
+                    left_subtree_id,
+                    right_subtree_id,
+                    player2_left_subtree_id,
+                    player2_right_subtree_id,
+                ],
+            )
             mujoco.mj_step(model, data)
 
             # Visualize at fixed FPS.
