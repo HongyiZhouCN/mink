@@ -116,7 +116,7 @@ if __name__ == "__main__":
     model = configuration.model
     data = configuration.data
     publisher = MujocoPublisher(model, data, host="192.168.0.134")
-    player1 = MetaQuest3("ALRMQ3-2")
+    player1 = MetaQuest3("IRLMQ3-1")
     
     solver = "quadprog"
 
@@ -145,14 +145,14 @@ if __name__ == "__main__":
                 right_hand = input_data["right"]
                 if left_hand["hand_trigger"]:
                     pos = np.array(input_data["left"]["pos"])
-                    pos[1] = pos[1] - 1.0
+                    pos[1] = pos[1] + 1.0
                     data.mocap_pos[model.body("left_wrist_target").mocapid[0]] = pos
                     rot = input_data["left"]["rot"]
                     # rot = apply_z_rotation(rot, z_angle = - np.pi / 2)
                     data.mocap_quat[model.body("left_wrist_target").mocapid[0]] = np.array([rot[3], rot[0], rot[1], rot[2]])
                 if right_hand["hand_trigger"]:
                     pos = np.array(input_data["right"]["pos"])
-                    pos[1] = pos[1] - 1.0
+                    pos[1] = pos[1] + 1.0
                     data.mocap_pos[model.body("right_wrist_target").mocapid[0]] = pos
                     rot = input_data["right"]["rot"]
                     # rot = apply_z_rotation(rot, z_angle = np.pi / 2)

@@ -4,8 +4,15 @@ import mujoco
 import mujoco.viewer
 from dm_control import mjcf
 from loop_rate_limiters import RateLimiter
+import numpy as np
 
 import mink
+
+from simpub.sim.mj_publisher import MujocoPublisher
+from simpub.xr_device.meta_quest3 import MetaQuest3
+
+from scipy.spatial.transform import Rotation as R
+
 
 _HERE = Path(__file__).parent
 _ARM_XML = _HERE / "kuka_iiwa_14" / "scene.xml"
@@ -24,6 +31,29 @@ HOME_QPOS = [
     1.0593, 0.638801, 0.391599, 0.57284,
 ]
 # fmt: on
+
+def apply_z_rotation(quat, z_angle = np.pi / 2):
+    """
+    Apply a rotation around the Z-axis to a given quaternion.
+
+    Args:
+        quat: The original quaternion (x, y, z, w).
+        z_angle: The rotation angle around the Z-axis in radians.
+
+    Returns:
+        A new quaternion after applying the Z-axis rotation.
+    """
+    # Convert the input quaternion to a rotation object
+    rotation = R.from_quat(quat)
+
+    # Create a rotation around the Z-axis
+    z_rotation = R.from_euler('z', z_angle)
+
+    # Combine the rotations
+    new_rotation = rotation * z_rotation  # Order matters: z_rotation is applied first
+
+    # Convert back to quaternion
+    return new_rotation.as_quat()
 
 
 def construct_model():
@@ -94,6 +124,10 @@ if __name__ == "__main__":
     model = configuration.model
     data = configuration.data
 
+    publisher = MujocoPublisher(model, data, host="192.168.0.134", visible_geoms_groups=[1, 2])
+    mq3 = MetaQuest3("IRLMQ3-1")
+
+
     with mujoco.viewer.launch_passive(
         model=model, data=data, show_left_ui=False, show_right_ui=False
     ) as viewer:
@@ -119,6 +153,24 @@ if __name__ == "__main__":
             # Update kuka end-effector task.
             T_wt = mink.SE3.from_mocap_name(model, data, "target")
             end_effector_task.set_target(T_wt)
+
+
+            input_data = mq3.get_input_data()
+            if input_data is not None:
+                # left_hand = input_data["left"]
+                right_hand = input_data["right"]
+                if right_hand["hand_trigger"]:
+                    pos = np.array(input_data["right"]["pos"])
+                    pos[0] = pos[0] - 0.3
+                    data.mocap_pos[model.body("target").mocapid[0]] = pos
+                    rot = input_data["right"]["rot"]
+                    rot = apply_z_rotation(rot, z_angle = - np.pi)
+                    data.mocap_quat[model.body("target").mocapid[0]] = np.array([rot[3], rot[0], rot[1], rot[2]])
+                    # if right_hand["index_trigger"]:
+                    #     data.ctrl[left_gripper_actuator] = 0.002
+                    # else:
+                    #     data.ctrl[left_gripper_actuator] = 0.037
+
 
             # Update finger tasks.
             for finger, task in zip(fingers, finger_tasks):
